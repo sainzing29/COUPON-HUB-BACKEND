@@ -1,0 +1,324 @@
+@CouponHub.Api_HostAddress = http://localhost:5137
+
+GET {{CouponHub.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
+
+# ServiceCenter API Tests
+
+### Get all service centers
+GET {{CouponHub.Api_HostAddress}}/api/servicecenters
+Accept: application/json
+
+###
+
+### Get service center by ID
+GET {{CouponHub.Api_HostAddress}}/api/servicecenters/1
+Accept: application/json
+
+###
+
+### Create a new service center
+POST {{CouponHub.Api_HostAddress}}/api/servicecenters
+Content-Type: application/json
+
+{
+  "name": "Downtown Service Center",
+  "address": "123 Main Street, Downtown",
+  "contactNumber": "+1-555-0123"
+}
+
+###
+
+### Update service center
+PUT {{CouponHub.Api_HostAddress}}/api/servicecenters/1
+Content-Type: application/json
+
+{
+  "id": 1,
+  "name": "Updated Service Center",
+  "address": "456 Updated Street, Downtown",
+  "contactNumber": "+1-555-0456"
+}
+
+###
+
+### Delete service center
+DELETE {{CouponHub.Api_HostAddress}}/api/servicecenters/1
+Accept: application/json
+
+###
+
+# Invoice API Tests
+
+### Get all invoices
+GET {{CouponHub.Api_HostAddress}}/api/invoices
+Accept: application/json
+
+###
+
+### Get invoice by ID
+GET {{CouponHub.Api_HostAddress}}/api/invoices/1
+Accept: application/json
+
+###
+
+### Get invoice by number
+GET {{CouponHub.Api_HostAddress}}/api/invoices/number/INV-2025-0001
+Accept: application/json
+
+###
+
+### Create a new invoice
+POST {{CouponHub.Api_HostAddress}}/api/invoices
+Content-Type: application/json
+
+{
+  "customerId": 1,
+  "serviceCenterId": 1,
+  "couponId": 1,
+  "subTotal": 100.00,
+  "taxAmount": 18.00,
+  "discountAmount": 10.00,
+  "totalAmount": 108.00,
+  "currency": "INR",
+  "paymentMethod": "UPI",
+  "paymentStatus": "Paid",
+  "notes": "Service completed successfully"
+}
+
+###
+
+### Update invoice
+PUT {{CouponHub.Api_HostAddress}}/api/invoices/1
+Content-Type: application/json
+
+{
+  "id": 1,
+  "customerId": 1,
+  "serviceCenterId": 1,
+  "couponId": 1,
+  "subTotal": 120.00,
+  "taxAmount": 21.60,
+  "discountAmount": 15.00,
+  "totalAmount": 126.60,
+  "currency": "INR",
+  "paymentMethod": "Card",
+  "paymentStatus": "Paid",
+  "notes": "Updated service details"
+}
+
+###
+
+### Delete invoice
+DELETE {{CouponHub.Api_HostAddress}}/api/invoices/1
+Accept: application/json
+
+###
+
+# Customer API Tests
+
+### Get all customers
+GET {{CouponHub.Api_HostAddress}}/api/customers
+Accept: application/json
+
+###
+
+### Get customer by ID
+GET {{CouponHub.Api_HostAddress}}/api/customers/1
+Accept: application/json
+
+###
+
+### Get customer by mobile
+GET {{CouponHub.Api_HostAddress}}/api/customers/mobile/+1234567890
+Accept: application/json
+
+###
+
+### Get customer by email
+GET {{CouponHub.Api_HostAddress}}/api/customers/email/customer@example.com
+Accept: application/json
+
+###
+
+### Create a new customer
+POST {{CouponHub.Api_HostAddress}}/api/customers
+Content-Type: application/json
+
+{
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "john.doe@example.com",
+  "mobileNumber": "+1234567890",
+  "googleId": "google123456"
+}
+
+###
+
+### Update customer
+PUT {{CouponHub.Api_HostAddress}}/api/customers/1
+Content-Type: application/json
+
+{
+  "id": 1,
+  "firstName": "John",
+  "lastName": "Smith",
+  "email": "john.smith@example.com",
+  "mobileNumber": "+1234567890",
+  "googleId": "google123456"
+}
+
+###
+
+### Activate customer
+POST {{CouponHub.Api_HostAddress}}/api/customers/1/activate
+Accept: application/json
+
+###
+
+### Deactivate customer
+POST {{CouponHub.Api_HostAddress}}/api/customers/1/deactivate
+Accept: application/json
+
+###
+
+### Delete customer
+DELETE {{CouponHub.Api_HostAddress}}/api/customers/1
+Accept: application/json
+
+###
+
+# ServiceRedemption API Tests
+
+### Get all service redemptions
+GET {{CouponHub.Api_HostAddress}}/api/serviceredemptions
+Accept: application/json
+
+###
+
+### Get service redemption by ID
+GET {{CouponHub.Api_HostAddress}}/api/serviceredemptions/1
+Accept: application/json
+
+###
+
+### Create a new service redemption
+POST {{CouponHub.Api_HostAddress}}/api/serviceredemptions
+Content-Type: application/json
+
+{
+  "couponId": 1,
+  "serviceCenterId": 1,
+  "customerId": 1,
+  "notes": "Service redeemed successfully",
+  "invoiceId": 1
+}
+
+###
+
+### Update service redemption
+PUT {{CouponHub.Api_HostAddress}}/api/serviceredemptions/1
+Content-Type: application/json
+
+{
+  "id": 1,
+  "couponId": 1,
+  "serviceCenterId": 1,
+  "customerId": 1,
+  "notes": "Updated service redemption details",
+  "invoiceId": 1
+}
+
+###
+
+### Delete service redemption
+DELETE {{CouponHub.Api_HostAddress}}/api/serviceredemptions/1
+Accept: application/json
+
+###
+
+# Coupon API Tests
+
+### Get all coupons
+GET {{CouponHub.Api_HostAddress}}/api/coupons
+Accept: application/json
+
+###
+
+### Get coupon by ID
+GET {{CouponHub.Api_HostAddress}}/api/coupons/1
+Accept: application/json
+
+###
+
+### Get coupon by code
+GET {{CouponHub.Api_HostAddress}}/api/coupons/code/CPN-12345
+Accept: application/json
+
+###
+
+### Get active coupons
+GET {{CouponHub.Api_HostAddress}}/api/coupons/active
+Accept: application/json
+
+###
+
+### Get expired coupons
+GET {{CouponHub.Api_HostAddress}}/api/coupons/expired
+Accept: application/json
+
+###
+
+### Create a new coupon
+POST {{CouponHub.Api_HostAddress}}/api/coupons
+Content-Type: application/json
+
+{
+  "customerId": 1,
+  "totalServices": 5,
+  "expiryDate": "2025-12-31T23:59:59Z",
+  "status": "Active"
+}
+
+###
+
+### Update coupon
+PUT {{CouponHub.Api_HostAddress}}/api/coupons/1
+Content-Type: application/json
+
+{
+  "id": 1,
+  "customerId": 1,
+  "totalServices": 10,
+  "expiryDate": "2025-12-31T23:59:59Z",
+  "status": "Active"
+}
+
+###
+
+### Redeem coupon
+POST {{CouponHub.Api_HostAddress}}/api/coupons/redeem
+Content-Type: application/json
+
+{
+  "couponId": 1,
+  "serviceCenterId": 1,
+  "customerId": 1,
+  "notes": "Service redeemed at downtown center"
+}
+
+###
+
+### Validate coupon
+GET {{CouponHub.Api_HostAddress}}/api/coupons/1/validate
+Accept: application/json
+
+###
+
+### Delete coupon
+DELETE {{CouponHub.Api_HostAddress}}/api/coupons/1
+Accept: application/json
+
+###
