@@ -44,11 +44,12 @@ var app = builder.Build();
 // Use CORS - should be early in the pipeline
 app.UseCors("AllowAll");
 
-if (app.Environment.IsDevelopment())
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "CouponHub API v1");
+    c.RoutePrefix = "swagger"; // so it's available at /swagger
+});
 
 app.MapControllers();
 app.Run();
