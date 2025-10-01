@@ -387,3 +387,10 @@ $RECYCLE.BIN/
 # JetBrains Rider
 .idea/
 *.sln.iml
+
+# Environment variable files (security)
+set-env-vars.ps1
+set-env-vars.bat
+.env
+.env.local
+.env.production

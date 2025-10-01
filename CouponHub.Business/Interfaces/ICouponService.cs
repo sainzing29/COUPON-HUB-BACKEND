@@ -10,6 +10,7 @@ namespace CouponHub.Business.Interfaces
         Task<IEnumerable<Coupon>> GetAllCouponsAsync();
         Task<IEnumerable<Coupon>> GetCouponsByCustomerIdAsync(int customerId);
         Task<IEnumerable<Coupon>> GetActiveCouponsAsync();
+        Task<IEnumerable<Coupon>> GetUnassignedCouponsAsync();
         Task<IEnumerable<Coupon>> GetExpiredCouponsAsync();
         Task<Coupon> UpdateCouponAsync(Coupon coupon);
         Task<bool> DeleteCouponAsync(int id);

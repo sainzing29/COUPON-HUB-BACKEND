@@ -3,6 +3,7 @@ using System;
 using CouponHub.DataAccess;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CouponHub.DataAccess.Migrations
 {
     [DbContext(typeof(CouponHubDbContext))]
-    partial class CouponHubDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250917155916_AddServiceCenterIdToCoupons")]
+    partial class AddServiceCenterIdToCoupons
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -46,8 +49,9 @@ namespace CouponHub.DataAccess.Migrations
                     b.Property<int?>("ServiceCenterId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<int>("TotalServices")
                         .HasColumnType("integer");
@@ -181,40 +185,6 @@ namespace CouponHub.DataAccess.Migrations
                     b.HasIndex("ServiceCenterId");
 
                     b.ToTable("Invoices");
-                });
-
-            modelBuilder.Entity("CouponHub.DataAccess.Models.PasswordResetToken", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("ExpiryDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("IsUsed")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Token")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Token")
-                        .IsUnique();
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("PasswordResetTokens");
                 });
 
             modelBuilder.Entity("CouponHub.DataAccess.Models.ServiceCenter", b =>
@@ -371,17 +341,6 @@ namespace CouponHub.DataAccess.Migrations
                     b.Navigation("Customer");
 
                     b.Navigation("ServiceCenter");
-                });
-
-            modelBuilder.Entity("CouponHub.DataAccess.Models.PasswordResetToken", b =>
-                {
-                    b.HasOne("CouponHub.DataAccess.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("CouponHub.DataAccess.Models.ServiceRedemption", b =>

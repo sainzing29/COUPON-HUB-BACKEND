@@ -13,6 +13,7 @@ namespace CouponHub.DataAccess
         public DbSet<Coupon> Coupons { get; set; }
         public DbSet<ServiceRedemption> ServiceRedemptions { get; set; }
         public DbSet<Invoice> Invoices { get; set; }
+        public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -38,6 +39,13 @@ namespace CouponHub.DataAccess
             .HasMany(c => c.Coupons)
             .WithOne(c => c.Customer)
             .HasForeignKey(c => c.CustomerId);
+
+        // Coupon to ServiceCenter relationship
+        modelBuilder.Entity<Coupon>()
+            .HasOne(c => c.ServiceCenter)
+            .WithMany(sc => sc.Coupons)
+            .HasForeignKey(c => c.ServiceCenterId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         modelBuilder.Entity<Customer>()
             .HasMany(c => c.Invoices)
@@ -78,6 +86,21 @@ namespace CouponHub.DataAccess
             .WithMany(sc => sc.Invoices)
             .HasForeignKey(i => i.ServiceCenterId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Configure CouponStatus enum to be stored as integer (default behavior)
+        // No additional configuration needed - EF will store enum as integer by default
+
+        // PasswordResetToken relationships
+        modelBuilder.Entity<PasswordResetToken>()
+            .HasOne(prt => prt.User)
+            .WithMany()
+            .HasForeignKey(prt => prt.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Unique constraint on token
+        modelBuilder.Entity<PasswordResetToken>()
+            .HasIndex(prt => prt.Token)
+            .IsUnique();
     }
 
     }

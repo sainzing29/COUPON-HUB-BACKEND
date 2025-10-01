@@ -1,56 +1,21 @@
-using CouponHub.DataAccess;
-using CouponHub.Business.Interfaces;
-using CouponHub.Business.Services;
-using Microsoft.EntityFrameworkCore;
+using CouponHub.Api;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// DbContext with PostgreSQL
-builder.Services.AddDbContext<CouponHubDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+// Enable environment variable substitution
+builder.Configuration.AddEnvironmentVariables();
 
-// Register services
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IServiceCenterService, ServiceCenterService>();
-builder.Services.AddScoped<IInvoiceService, InvoiceService>();
-builder.Services.AddScoped<ICustomerService, CustomerService>();
-builder.Services.AddScoped<IServiceRedemptionService, ServiceRedemptionService>();
-builder.Services.AddScoped<ICouponService, CouponService>();
-
-// Add CORS
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll", policy =>
-    {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
-    });
-});
-
-// Configure JSON serialization to handle circular references
-builder.Services.ConfigureHttpJsonOptions(options =>
-{
-    options.SerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
-});
-
-// Add Controllers
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+// Configure services
+var startup = new Startup(builder.Configuration);
+startup.ConfigureServices(builder.Services);
 
 var app = builder.Build();
 
-// Use CORS - should be early in the pipeline
-app.UseCors("AllowAll");
+// Configure the HTTP request pipeline
+startup.Configure(app, app.Environment);
 
-app.UseSwagger();
-app.UseSwaggerUI(c =>
-{
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "CouponHub API v1");
-    c.RoutePrefix = "swagger"; // so it's available at /swagger
-});
-
+// Map controllers
 app.MapControllers();
+
 app.Run();
 

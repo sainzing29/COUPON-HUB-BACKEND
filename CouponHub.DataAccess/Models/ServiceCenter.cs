@@ -9,6 +9,7 @@ namespace CouponHub.DataAccess.Models
 
         // Relations
         public ICollection<User> Admins { get; set; } = new List<User>();
+        public ICollection<Coupon> Coupons { get; set; } = new List<Coupon>();
         public ICollection<ServiceRedemption> Redemptions { get; set; } = new List<ServiceRedemption>();
         public ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
     }

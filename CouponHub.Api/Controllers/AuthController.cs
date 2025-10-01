@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using CouponHub.DataAccess;
 using CouponHub.DataAccess.Models;
+using CouponHub.Business.Services;
+using CouponHub.Business.Interfaces;
 using System.Security.Cryptography;
 using System.Text;
 using BCrypt.Net;
@@ -13,118 +15,40 @@ namespace CouponHub.Api.Controllers
     public class AuthController : ControllerBase
     {
         private readonly CouponHubDbContext _context;
+        private readonly IUserService _userService;
+        private readonly AuthService _authService;
+        private readonly IPasswordResetTokenService _passwordResetTokenService;
+        private readonly IEmailService _emailService;
 
-        public AuthController(CouponHubDbContext context)
+        public AuthController(CouponHubDbContext context, IUserService userService, AuthService authService, IPasswordResetTokenService passwordResetTokenService, IEmailService emailService)
         {
             _context = context;
+            _userService = userService;
+            _authService = authService;
+            _passwordResetTokenService = passwordResetTokenService;
+            _emailService = emailService;
         }
 
         // ============================
         // 1. Email + Password (Admin / SuperAdmin)
         // ============================
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginRequest dto)
+        public async Task<IActionResult> Login([FromBody] LoginRequest req)
         {
-            var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Email == dto.Email && u.IsActive);
+            var user = await _userService.GetUserByEmailAsync(req.Email).ConfigureAwait(false);
+            if (user == null) return Unauthorized("Invalid email or password");
 
-            if (user == null || string.IsNullOrEmpty(user.PasswordHash))
-                return Unauthorized(new { error = "Invalid email or password" });
-
-            // Debug: Let's see what we're comparing
-            var inputPasswordHash = HashPassword(dto.Password);
-            var storedHash = user.PasswordHash;
-            
-            Console.WriteLine($"Input password: {dto.Password}");
-            Console.WriteLine($"Input hash: {inputPasswordHash}");
-            Console.WriteLine($"Stored hash: {storedHash}");
-            Console.WriteLine($"Hashes match: {inputPasswordHash == storedHash}");
-
-            if (!VerifyPassword(dto.Password, user.PasswordHash))
-                return Unauthorized(new { error = "Invalid email or password" });
-
-            return Ok(new { message = "Login successful", role = user.Role, user });
-        }
-
-        // ============================
-        // 2. Request OTP (Customer)
-        // ============================
-        [HttpPost("request-otp")]
-        public async Task<IActionResult> RequestOtp([FromBody] OtpRequest dto)
-        {
-            var customer = await _context.Customers.FirstOrDefaultAsync(c => c.MobileNumber == dto.MobileNumber);
-
-            if (customer == null)
+            if (string.IsNullOrEmpty(user.PasswordHash) || 
+                !BCrypt.Net.BCrypt.Verify(req.Password, user.PasswordHash))
             {
-                // create new customer if not exists
-                customer = new Customer
-                {
-                    MobileNumber = dto.MobileNumber,
-                    FirstName = "", // Will be filled during OTP verification
-                    LastName = "",
-                    Email = ""
-                };
-                _context.Customers.Add(customer);
+                return Unauthorized("Invalid email or password");
             }
 
-            // generate OTP (for demo: fixed or random)
-            var otp = new Random().Next(1000, 9999).ToString();
-            customer.OtpCode = otp;
-            customer.OtpExpiry = DateTime.UtcNow.AddMinutes(5);
-
-            await _context.SaveChangesAsync();
-
-            // TODO: send OTP via SMS gateway (Twilio/Firebase)
-            return Ok(new { message = "OTP sent", otp = otp }); // ⚠️ return OTP for demo only
+            var token = _authService.GenerateJwtToken(user);
+            return Ok(new { token });
         }
 
-        // ============================
-        // 3. Verify OTP (Customer)
-        // ============================
-        [HttpPost("verify-otp")]
-        public async Task<IActionResult> VerifyOtp([FromBody] OtpVerifyRequest dto)
-        {
-            var customer = await _context.Customers.FirstOrDefaultAsync(c => c.MobileNumber == dto.MobileNumber);
-
-            if (customer == null || customer.OtpCode != dto.Otp || customer.OtpExpiry < DateTime.UtcNow)
-                return Unauthorized(new { error = "Invalid or expired OTP" });
-
-            // clear OTP after use
-            customer.OtpCode = null;
-            customer.OtpExpiry = null;
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "OTP login successful", role = "Customer", customer });
-        }
-
-        // ============================
-        // 4. Google Login (Customer)
-        // ============================
-        [HttpPost("google-login")]
-        public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest dto)
-        {
-            var customer = await _context.Customers.FirstOrDefaultAsync(c => c.GoogleId == dto.GoogleId);
-
-            if (customer == null)
-            {
-                customer = new Customer
-                {
-                    GoogleId = dto.GoogleId,
-                    Email = dto.Email,
-                    FirstName = dto.FirstName,
-                    LastName = dto.LastName,
-                    MobileNumber = "" // Google login doesn't require mobile number
-                };
-                _context.Customers.Add(customer);
-                await _context.SaveChangesAsync();
-            }
-
-            return Ok(new { message = "Google login successful", role = "Customer", customer });
-        }
-
-        // ============================
-        // Helpers
-        // ============================
+       
         private static string HashPassword(string password)
         {
             return BCrypt.Net.BCrypt.HashPassword(password);
@@ -147,6 +71,81 @@ namespace CouponHub.Api.Controllers
         {
             var hash = HashPassword(password);
             return Ok(new { password, hash });
+        }
+
+        // ============================
+        // Password Setup Endpoints
+        // ============================
+        [HttpPost("validate-setup-token")]
+        public async Task<IActionResult> ValidateSetupToken([FromBody] ValidateTokenRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+
+            var isValid = await _passwordResetTokenService.ValidateTokenAsync(request.Token).ConfigureAwait(false);
+            
+            if (!isValid)
+            {
+                return BadRequest("Invalid or expired token");
+            }
+
+            var user = await _passwordResetTokenService.GetUserByTokenAsync(request.Token).ConfigureAwait(false);
+            
+            return Ok(new { 
+                isValid = true, 
+                user = new { 
+                    id = user?.Id, 
+                    email = user?.Email, 
+                    firstName = user?.FirstName,
+                    lastName = user?.LastName 
+                } 
+            });
+        }
+
+        [HttpPost("set-password")]
+        public async Task<IActionResult> SetPassword([FromBody] SetPasswordRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+
+            if (string.IsNullOrEmpty(request.Password) || request.Password.Length < 6)
+            {
+                return BadRequest("Password must be at least 6 characters long");
+            }
+
+            var passwordHash = HashPassword(request.Password);
+            var success = await _passwordResetTokenService.UseTokenAsync(request.Token, passwordHash).ConfigureAwait(false);
+
+            if (!success)
+            {
+                return BadRequest("Invalid or expired token");
+            }
+
+            return Ok(new { message = "Password set successfully" });
+        }
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+
+            var user = await _userService.GetUserByEmailAsync(request.Email).ConfigureAwait(false);
+            
+            if (user == null)
+            {
+                // Don't reveal if email exists or not for security
+                return Ok(new { message = "If the email exists, a password reset link has been sent." });
+            }
+
+            var token = await _passwordResetTokenService.GeneratePasswordSetupTokenAsync(user.Id).ConfigureAwait(false);
+            var emailSent = await _emailService.SendPasswordResetEmailAsync(user, token).ConfigureAwait(false);
+
+            if (emailSent)
+            {
+                return Ok(new { message = "Password reset link has been sent to your email." });
+            }
+            else
+            {
+                return BadRequest(new { message = "Failed to send password reset email. Please try again later." });
+            }
         }
     }
 
@@ -174,5 +173,21 @@ namespace CouponHub.Api.Controllers
         public string Email { get; set; } = string.Empty;
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
+    }
+
+    public class ValidateTokenRequest
+    {
+        public string Token { get; set; } = string.Empty;
+    }
+
+    public class SetPasswordRequest
+    {
+        public string Token { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+
+    public class ForgotPasswordRequest
+    {
+        public string Email { get; set; } = string.Empty;
     }
 }

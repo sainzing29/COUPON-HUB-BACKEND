@@ -19,6 +19,8 @@ namespace CouponHub.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateServiceCenter(CreateServiceCenterDto createDto)
         {
+            ArgumentNullException.ThrowIfNull(createDto);
+            
             try
             {
                 var serviceCenter = new ServiceCenter
@@ -28,7 +30,7 @@ namespace CouponHub.Api.Controllers
                     ContactNumber = createDto.ContactNumber
                 };
 
-                var createdServiceCenter = await _serviceCenterService.CreateServiceCenterAsync(serviceCenter);
+                var createdServiceCenter = await _serviceCenterService.CreateServiceCenterAsync(serviceCenter).ConfigureAwait(false);
                 
                 var response = new ServiceCenterDto
                 {
@@ -40,16 +42,20 @@ namespace CouponHub.Api.Controllers
 
                 return CreatedAtAction(nameof(GetServiceCenterById), new { id = createdServiceCenter.Id }, response);
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
             {
-                return BadRequest($"Error creating service center: {ex.Message}");
+                return BadRequest($"Invalid service center data: {ex.Message}");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest($"Service center operation failed: {ex.Message}");
             }
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetServiceCenterById(int id)
         {
-            var serviceCenter = await _serviceCenterService.GetServiceCenterByIdAsync(id);
+            var serviceCenter = await _serviceCenterService.GetServiceCenterByIdAsync(id).ConfigureAwait(false);
             if (serviceCenter == null)
                 return NotFound($"Service center with ID {id} not found");
 
@@ -69,7 +75,7 @@ namespace CouponHub.Api.Controllers
         {
             try
             {
-                var serviceCenters = await _serviceCenterService.GetAllServiceCentersAsync();
+                var serviceCenters = await _serviceCenterService.GetAllServiceCentersAsync().ConfigureAwait(false);
                 
                 var response = serviceCenters.Select(sc => new ServiceCenterDto
                 {
@@ -81,21 +87,23 @@ namespace CouponHub.Api.Controllers
 
                 return Ok(response);
             }
-            catch (Exception ex)
+            catch (InvalidOperationException ex)
             {
-                return BadRequest($"Error retrieving service centers: {ex.Message}");
+                return BadRequest($"Service center retrieval failed: {ex.Message}");
             }
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateServiceCenter(int id, UpdateServiceCenterDto updateDto)
         {
+            ArgumentNullException.ThrowIfNull(updateDto);
+            
             try
             {
                 if (id != updateDto.Id)
                     return BadRequest("ID mismatch");
 
-                var existingServiceCenter = await _serviceCenterService.GetServiceCenterByIdAsync(id);
+                var existingServiceCenter = await _serviceCenterService.GetServiceCenterByIdAsync(id).ConfigureAwait(false);
                 if (existingServiceCenter == null)
                     return NotFound($"Service center with ID {id} not found");
 
@@ -107,7 +115,7 @@ namespace CouponHub.Api.Controllers
                     ContactNumber = updateDto.ContactNumber
                 };
 
-                var updatedServiceCenter = await _serviceCenterService.UpdateServiceCenterAsync(serviceCenter);
+                var updatedServiceCenter = await _serviceCenterService.UpdateServiceCenterAsync(serviceCenter).ConfigureAwait(false);
                 
                 var response = new ServiceCenterDto
                 {
@@ -119,9 +127,13 @@ namespace CouponHub.Api.Controllers
 
                 return Ok(response);
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
             {
-                return BadRequest($"Error updating service center: {ex.Message}");
+                return BadRequest($"Invalid service center data: {ex.Message}");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest($"Service center operation failed: {ex.Message}");
             }
         }
 
@@ -130,15 +142,15 @@ namespace CouponHub.Api.Controllers
         {
             try
             {
-                var result = await _serviceCenterService.DeleteServiceCenterAsync(id);
+                var result = await _serviceCenterService.DeleteServiceCenterAsync(id).ConfigureAwait(false);
                 if (!result)
                     return NotFound($"Service center with ID {id} not found");
 
                 return NoContent();
             }
-            catch (Exception ex)
+            catch (InvalidOperationException ex)
             {
-                return BadRequest($"Error deleting service center: {ex.Message}");
+                return BadRequest($"Service center deletion failed: {ex.Message}");
             }
         }
     }

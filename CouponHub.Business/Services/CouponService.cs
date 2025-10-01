@@ -61,7 +61,17 @@ namespace CouponHub.Business.Services
             return await _context.Coupons
                 .Include(c => c.Customer)
                 .Include(c => c.Redemptions)
-                .Where(c => c.Status == "Active" && c.ExpiryDate > DateTime.UtcNow)
+                .Where(c => c.Status == CouponStatus.Active)
+                .OrderByDescending(c => c.PurchaseDate)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Coupon>> GetUnassignedCouponsAsync()
+        {
+            return await _context.Coupons
+                .Include(c => c.Customer)
+                .Include(c => c.Redemptions)
+                .Where(c => c.Status == CouponStatus.Unassigned)
                 .OrderByDescending(c => c.PurchaseDate)
                 .ToListAsync();
         }
@@ -71,10 +81,12 @@ namespace CouponHub.Business.Services
             return await _context.Coupons
                 .Include(c => c.Customer)
                 .Include(c => c.Redemptions)
-                .Where(c => c.Status == "Expired" || c.ExpiryDate <= DateTime.UtcNow)
+                .Where(c => c.Status == CouponStatus.Expired)
                 .OrderByDescending(c => c.PurchaseDate)
                 .ToListAsync();
         }
+
+    
 
         public async Task<Coupon> UpdateCouponAsync(Coupon coupon)
         {
@@ -97,7 +109,7 @@ namespace CouponHub.Business.Services
         public async Task<bool> RedeemCouponAsync(int couponId, int serviceCenterId, int customerId, string notes = "")
         {
             var coupon = await _context.Coupons.FindAsync(couponId);
-            if (coupon == null || coupon.Status != "Active" || coupon.ExpiryDate <= DateTime.UtcNow)
+            if (coupon == null || coupon.Status !=CouponStatus.Active|| coupon.ExpiryDate <= DateTime.UtcNow)
                 return false;
 
             if (coupon.UsedServices >= coupon.TotalServices)
@@ -121,7 +133,7 @@ namespace CouponHub.Business.Services
             // Check if all services are used
             if (coupon.UsedServices >= coupon.TotalServices)
             {
-                coupon.Status = "Fully Used";
+                coupon.Status = CouponStatus.Completed;
             }
 
             await _context.SaveChangesAsync();
@@ -132,7 +144,7 @@ namespace CouponHub.Business.Services
         {
             var coupon = await _context.Coupons.FindAsync(couponId);
             return coupon != null && 
-                   coupon.Status == "Active" && 
+                   coupon.Status == CouponStatus.Active && 
                    coupon.ExpiryDate > DateTime.UtcNow && 
                    coupon.UsedServices < coupon.TotalServices;
         }

@@ -19,6 +19,8 @@ namespace CouponHub.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateInvoice(CreateInvoiceDto createDto)
         {
+            ArgumentNullException.ThrowIfNull(createDto);
+            
             try
             {
                 var invoice = new Invoice
@@ -37,21 +39,25 @@ namespace CouponHub.Api.Controllers
                     Notes = createDto.Notes
                 };
 
-                var createdInvoice = await _invoiceService.CreateInvoiceAsync(invoice);
+                var createdInvoice = await _invoiceService.CreateInvoiceAsync(invoice).ConfigureAwait(false);
                 var response = MapToDto(createdInvoice);
 
                 return CreatedAtAction(nameof(GetInvoiceById), new { id = createdInvoice.Id }, response);
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
             {
-                return BadRequest($"Error creating invoice: {ex.Message}");
+                return BadRequest($"Invalid invoice data: {ex.Message}");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest($"Invoice operation failed: {ex.Message}");
             }
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetInvoiceById(int id)
         {
-            var invoice = await _invoiceService.GetInvoiceByIdAsync(id);
+            var invoice = await _invoiceService.GetInvoiceByIdAsync(id).ConfigureAwait(false);
             if (invoice == null)
                 return NotFound($"Invoice with ID {id} not found");
 
@@ -62,7 +68,7 @@ namespace CouponHub.Api.Controllers
         [HttpGet("number/{invoiceNumber}")]
         public async Task<IActionResult> GetInvoiceByNumber(string invoiceNumber)
         {
-            var invoice = await _invoiceService.GetInvoiceByNumberAsync(invoiceNumber);
+            var invoice = await _invoiceService.GetInvoiceByNumberAsync(invoiceNumber).ConfigureAwait(false);
             if (invoice == null)
                 return NotFound($"Invoice with number {invoiceNumber} not found");
 
@@ -75,13 +81,13 @@ namespace CouponHub.Api.Controllers
         {
             try
             {
-                var invoices = await _invoiceService.GetAllInvoicesAsync();
+                var invoices = await _invoiceService.GetAllInvoicesAsync().ConfigureAwait(false);
                 var response = invoices.Select(MapToDto);
                 return Ok(response);
             }
-            catch (Exception ex)
+            catch (InvalidOperationException ex)
             {
-                return BadRequest($"Error retrieving invoices: {ex.Message}");
+                return BadRequest($"Invoice retrieval failed: {ex.Message}");
             }
         }
 
@@ -90,13 +96,13 @@ namespace CouponHub.Api.Controllers
         {
             try
             {
-                var invoices = await _invoiceService.GetInvoicesByCustomerIdAsync(customerId);
+                var invoices = await _invoiceService.GetInvoicesByCustomerIdAsync(customerId).ConfigureAwait(false);
                 var response = invoices.Select(MapToDto);
                 return Ok(response);
             }
-            catch (Exception ex)
+            catch (InvalidOperationException ex)
             {
-                return BadRequest($"Error retrieving invoices for customer: {ex.Message}");
+                return BadRequest($"Invoice retrieval failed: {ex.Message}");
             }
         }
 
@@ -105,25 +111,27 @@ namespace CouponHub.Api.Controllers
         {
             try
             {
-                var invoices = await _invoiceService.GetInvoicesByServiceCenterIdAsync(serviceCenterId);
+                var invoices = await _invoiceService.GetInvoicesByServiceCenterIdAsync(serviceCenterId).ConfigureAwait(false);
                 var response = invoices.Select(MapToDto);
                 return Ok(response);
             }
-            catch (Exception ex)
+            catch (InvalidOperationException ex)
             {
-                return BadRequest($"Error retrieving invoices for service center: {ex.Message}");
+                return BadRequest($"Invoice retrieval failed: {ex.Message}");
             }
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateInvoice(int id, UpdateInvoiceDto updateDto)
         {
+            ArgumentNullException.ThrowIfNull(updateDto);
+            
             try
             {
                 if (id != updateDto.Id)
                     return BadRequest("ID mismatch");
 
-                var existingInvoice = await _invoiceService.GetInvoiceByIdAsync(id);
+                var existingInvoice = await _invoiceService.GetInvoiceByIdAsync(id).ConfigureAwait(false);
                 if (existingInvoice == null)
                     return NotFound($"Invoice with ID {id} not found");
 
@@ -146,14 +154,18 @@ namespace CouponHub.Api.Controllers
                     IsDeleted = existingInvoice.IsDeleted
                 };
 
-                var updatedInvoice = await _invoiceService.UpdateInvoiceAsync(invoice);
+                var updatedInvoice = await _invoiceService.UpdateInvoiceAsync(invoice).ConfigureAwait(false);
                 var response = MapToDto(updatedInvoice);
 
                 return Ok(response);
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
             {
-                return BadRequest($"Error updating invoice: {ex.Message}");
+                return BadRequest($"Invalid invoice data: {ex.Message}");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest($"Invoice operation failed: {ex.Message}");
             }
         }
 
@@ -162,15 +174,15 @@ namespace CouponHub.Api.Controllers
         {
             try
             {
-                var result = await _invoiceService.DeleteInvoiceAsync(id);
+                var result = await _invoiceService.DeleteInvoiceAsync(id).ConfigureAwait(false);
                 if (!result)
                     return NotFound($"Invoice with ID {id} not found");
 
                 return NoContent();
             }
-            catch (Exception ex)
+            catch (InvalidOperationException ex)
             {
-                return BadRequest($"Error deleting invoice: {ex.Message}");
+                return BadRequest($"Invoice deletion failed: {ex.Message}");
             }
         }
 

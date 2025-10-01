@@ -19,6 +19,8 @@ namespace CouponHub.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateCustomer(CreateCustomerDto createDto)
         {
+            ArgumentNullException.ThrowIfNull(createDto);
+            
             try
             {
                 var customer = new Customer
@@ -30,21 +32,25 @@ namespace CouponHub.Api.Controllers
                     GoogleId = createDto.GoogleId
                 };
 
-                var createdCustomer = await _customerService.CreateCustomerAsync(customer);
+                var createdCustomer = await _customerService.CreateCustomerAsync(customer).ConfigureAwait(false);
                 var response = MapToDto(createdCustomer);
 
                 return CreatedAtAction(nameof(GetCustomerById), new { id = createdCustomer.Id }, response);
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
             {
-                return BadRequest($"Error creating customer: {ex.Message}");
+                return BadRequest($"Invalid customer data: {ex.Message}");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest($"Customer operation failed: {ex.Message}");
             }
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetCustomerById(int id)
         {
-            var customer = await _customerService.GetCustomerByIdAsync(id);
+            var customer = await _customerService.GetCustomerByIdAsync(id).ConfigureAwait(false);
             if (customer == null)
                 return NotFound($"Customer with ID {id} not found");
 
@@ -55,7 +61,7 @@ namespace CouponHub.Api.Controllers
         [HttpGet("mobile/{mobileNumber}")]
         public async Task<IActionResult> GetCustomerByMobile(string mobileNumber)
         {
-            var customer = await _customerService.GetCustomerByMobileAsync(mobileNumber);
+            var customer = await _customerService.GetCustomerByMobileAsync(mobileNumber).ConfigureAwait(false);
             if (customer == null)
                 return NotFound($"Customer with mobile number {mobileNumber} not found");
 
@@ -66,7 +72,7 @@ namespace CouponHub.Api.Controllers
         [HttpGet("email/{email}")]
         public async Task<IActionResult> GetCustomerByEmail(string email)
         {
-            var customer = await _customerService.GetCustomerByEmailAsync(email);
+            var customer = await _customerService.GetCustomerByEmailAsync(email).ConfigureAwait(false);
             if (customer == null)
                 return NotFound($"Customer with email {email} not found");
 
@@ -79,25 +85,27 @@ namespace CouponHub.Api.Controllers
         {
             try
             {
-                var customers = await _customerService.GetAllCustomersAsync();
+                var customers = await _customerService.GetAllCustomersAsync().ConfigureAwait(false);
                 var response = customers.Select(MapToDto);
                 return Ok(response);
             }
-            catch (Exception ex)
+            catch (InvalidOperationException ex)
             {
-                return BadRequest($"Error retrieving customers: {ex.Message}");
+                return BadRequest($"Customer retrieval failed: {ex.Message}");
             }
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateCustomer(int id, UpdateCustomerDto updateDto)
         {
+            ArgumentNullException.ThrowIfNull(updateDto);
+            
             try
             {
                 if (id != updateDto.Id)
                     return BadRequest("ID mismatch");
 
-                var existingCustomer = await _customerService.GetCustomerByIdAsync(id);
+                var existingCustomer = await _customerService.GetCustomerByIdAsync(id).ConfigureAwait(false);
                 if (existingCustomer == null)
                     return NotFound($"Customer with ID {id} not found");
 
@@ -113,14 +121,18 @@ namespace CouponHub.Api.Controllers
                     IsActive = existingCustomer.IsActive
                 };
 
-                var updatedCustomer = await _customerService.UpdateCustomerAsync(customer);
+                var updatedCustomer = await _customerService.UpdateCustomerAsync(customer).ConfigureAwait(false);
                 var response = MapToDto(updatedCustomer);
 
                 return Ok(response);
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
             {
-                return BadRequest($"Error updating customer: {ex.Message}");
+                return BadRequest($"Invalid customer data: {ex.Message}");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest($"Customer operation failed: {ex.Message}");
             }
         }
 
@@ -129,15 +141,15 @@ namespace CouponHub.Api.Controllers
         {
             try
             {
-                var result = await _customerService.DeleteCustomerAsync(id);
+                var result = await _customerService.DeleteCustomerAsync(id).ConfigureAwait(false);
                 if (!result)
                     return NotFound($"Customer with ID {id} not found");
 
                 return NoContent();
             }
-            catch (Exception ex)
+            catch (InvalidOperationException ex)
             {
-                return BadRequest($"Error deleting customer: {ex.Message}");
+                return BadRequest($"Customer deletion failed: {ex.Message}");
             }
         }
 
@@ -146,15 +158,15 @@ namespace CouponHub.Api.Controllers
         {
             try
             {
-                var result = await _customerService.ActivateCustomerAsync(id);
+                var result = await _customerService.ActivateCustomerAsync(id).ConfigureAwait(false);
                 if (!result)
                     return NotFound($"Customer with ID {id} not found");
 
                 return Ok(new { message = "Customer activated successfully" });
             }
-            catch (Exception ex)
+            catch (InvalidOperationException ex)
             {
-                return BadRequest($"Error activating customer: {ex.Message}");
+                return BadRequest($"Customer activation failed: {ex.Message}");
             }
         }
 
@@ -163,15 +175,15 @@ namespace CouponHub.Api.Controllers
         {
             try
             {
-                var result = await _customerService.DeactivateCustomerAsync(id);
+                var result = await _customerService.DeactivateCustomerAsync(id).ConfigureAwait(false);
                 if (!result)
                     return NotFound($"Customer with ID {id} not found");
 
                 return Ok(new { message = "Customer deactivated successfully" });
             }
-            catch (Exception ex)
+            catch (InvalidOperationException ex)
             {
-                return BadRequest($"Error deactivating customer: {ex.Message}");
+                return BadRequest($"Customer deactivation failed: {ex.Message}");
             }
         }
 

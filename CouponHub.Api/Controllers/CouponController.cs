@@ -19,6 +19,8 @@ namespace CouponHub.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateCoupon(CreateCouponDto createDto)
         {
+            ArgumentNullException.ThrowIfNull(createDto);
+            
             try
             {
                 var coupon = new Coupon
@@ -27,24 +29,28 @@ namespace CouponHub.Api.Controllers
                     CustomerId = createDto.CustomerId,
                     TotalServices = createDto.TotalServices,
                     ExpiryDate = createDto.ExpiryDate,
-                    Status = createDto.Status
+                    Status = Enum.Parse<CouponStatus>(createDto.Status)
                 };
 
-                var createdCoupon = await _couponService.CreateCouponAsync(coupon);
+                var createdCoupon = await _couponService.CreateCouponAsync(coupon).ConfigureAwait(false);
                 var response = MapToDto(createdCoupon);
 
                 return CreatedAtAction(nameof(GetCouponById), new { id = createdCoupon.Id }, response);
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
             {
-                return BadRequest($"Error creating coupon: {ex.Message}");
+                return BadRequest($"Invalid coupon data: {ex.Message}");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest($"Coupon operation failed: {ex.Message}");
             }
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetCouponById(int id)
         {
-            var coupon = await _couponService.GetCouponByIdAsync(id);
+            var coupon = await _couponService.GetCouponByIdAsync(id).ConfigureAwait(false);
             if (coupon == null)
                 return NotFound($"Coupon with ID {id} not found");
 
@@ -55,7 +61,7 @@ namespace CouponHub.Api.Controllers
         [HttpGet("code/{couponCode}")]
         public async Task<IActionResult> GetCouponByCode(string couponCode)
         {
-            var coupon = await _couponService.GetCouponByCodeAsync(couponCode);
+            var coupon = await _couponService.GetCouponByCodeAsync(couponCode).ConfigureAwait(false);
             if (coupon == null)
                 return NotFound($"Coupon with code {couponCode} not found");
 
@@ -68,13 +74,13 @@ namespace CouponHub.Api.Controllers
         {
             try
             {
-                var coupons = await _couponService.GetAllCouponsAsync();
+                var coupons = await _couponService.GetAllCouponsAsync().ConfigureAwait(false);
                 var response = coupons.Select(MapToDto);
                 return Ok(response);
             }
-            catch (Exception ex)
+            catch (InvalidOperationException ex)
             {
-                return BadRequest($"Error retrieving coupons: {ex.Message}");
+                return BadRequest($"Coupon retrieval failed: {ex.Message}");
             }
         }
 
@@ -83,13 +89,13 @@ namespace CouponHub.Api.Controllers
         {
             try
             {
-                var coupons = await _couponService.GetCouponsByCustomerIdAsync(customerId);
+                var coupons = await _couponService.GetCouponsByCustomerIdAsync(customerId).ConfigureAwait(false);
                 var response = coupons.Select(MapToDto);
                 return Ok(response);
             }
-            catch (Exception ex)
+            catch (InvalidOperationException ex)
             {
-                return BadRequest($"Error retrieving coupons for customer: {ex.Message}");
+                return BadRequest($"Coupon retrieval failed: {ex.Message}");
             }
         }
 
@@ -98,13 +104,28 @@ namespace CouponHub.Api.Controllers
         {
             try
             {
-                var coupons = await _couponService.GetActiveCouponsAsync();
+                var coupons = await _couponService.GetActiveCouponsAsync().ConfigureAwait(false);
                 var response = coupons.Select(MapToDto);
                 return Ok(response);
             }
-            catch (Exception ex)
+            catch (InvalidOperationException ex)
             {
-                return BadRequest($"Error retrieving active coupons: {ex.Message}");
+                return BadRequest($"Coupon retrieval failed: {ex.Message}");
+            }
+        }
+
+        [HttpGet("unassigned")]
+        public async Task<IActionResult> GetUnassignedCoupons()
+        {
+            try
+            {
+                var coupons = await _couponService.GetUnassignedCouponsAsync().ConfigureAwait(false);
+                var response = coupons.Select(MapToDto);
+                return Ok(response);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest($"Coupon retrieval failed: {ex.Message}");
             }
         }
 
@@ -113,25 +134,27 @@ namespace CouponHub.Api.Controllers
         {
             try
             {
-                var coupons = await _couponService.GetExpiredCouponsAsync();
+                var coupons = await _couponService.GetExpiredCouponsAsync().ConfigureAwait(false);
                 var response = coupons.Select(MapToDto);
                 return Ok(response);
             }
-            catch (Exception ex)
+            catch (InvalidOperationException ex)
             {
-                return BadRequest($"Error retrieving expired coupons: {ex.Message}");
+                return BadRequest($"Coupon retrieval failed: {ex.Message}");
             }
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateCoupon(int id, UpdateCouponDto updateDto)
         {
+            ArgumentNullException.ThrowIfNull(updateDto);
+            
             try
             {
                 if (id != updateDto.Id)
                     return BadRequest("ID mismatch");
 
-                var existingCoupon = await _couponService.GetCouponByIdAsync(id);
+                var existingCoupon = await _couponService.GetCouponByIdAsync(id).ConfigureAwait(false);
                 if (existingCoupon == null)
                     return NotFound($"Coupon with ID {id} not found");
 
@@ -143,18 +166,22 @@ namespace CouponHub.Api.Controllers
                     TotalServices = updateDto.TotalServices,
                     UsedServices = existingCoupon.UsedServices, // Keep current usage
                     ExpiryDate = updateDto.ExpiryDate,
-                    Status = updateDto.Status,
+                    Status = Enum.Parse<CouponStatus>(updateDto.Status),
                     PurchaseDate = existingCoupon.PurchaseDate
                 };
 
-                var updatedCoupon = await _couponService.UpdateCouponAsync(coupon);
+                var updatedCoupon = await _couponService.UpdateCouponAsync(coupon).ConfigureAwait(false);
                 var response = MapToDto(updatedCoupon);
 
                 return Ok(response);
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
             {
-                return BadRequest($"Error updating coupon: {ex.Message}");
+                return BadRequest($"Invalid coupon data: {ex.Message}");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest($"Coupon operation failed: {ex.Message}");
             }
         }
 
@@ -163,37 +190,39 @@ namespace CouponHub.Api.Controllers
         {
             try
             {
-                var result = await _couponService.DeleteCouponAsync(id);
+                var result = await _couponService.DeleteCouponAsync(id).ConfigureAwait(false);
                 if (!result)
                     return NotFound($"Coupon with ID {id} not found");
 
                 return NoContent();
             }
-            catch (Exception ex)
+            catch (InvalidOperationException ex)
             {
-                return BadRequest($"Error deleting coupon: {ex.Message}");
+                return BadRequest($"Coupon deletion failed: {ex.Message}");
             }
         }
 
         [HttpPost("redeem")]
         public async Task<IActionResult> RedeemCoupon(RedeemCouponDto redeemDto)
         {
+            ArgumentNullException.ThrowIfNull(redeemDto);
+            
             try
             {
                 var result = await _couponService.RedeemCouponAsync(
                     redeemDto.CouponId, 
                     redeemDto.ServiceCenterId, 
                     redeemDto.CustomerId, 
-                    redeemDto.Notes);
+                    redeemDto.Notes).ConfigureAwait(false);
 
                 if (!result)
                     return BadRequest("Coupon redemption failed. Coupon may be invalid or expired.");
 
                 return Ok(new { message = "Coupon redeemed successfully" });
             }
-            catch (Exception ex)
+            catch (InvalidOperationException ex)
             {
-                return BadRequest($"Error redeeming coupon: {ex.Message}");
+                return BadRequest($"Coupon redemption failed: {ex.Message}");
             }
         }
 
@@ -202,19 +231,19 @@ namespace CouponHub.Api.Controllers
         {
             try
             {
-                var isValid = await _couponService.IsCouponValidAsync(id);
+                var isValid = await _couponService.IsCouponValidAsync(id).ConfigureAwait(false);
                 return Ok(new { isValid });
             }
-            catch (Exception ex)
+            catch (InvalidOperationException ex)
             {
-                return BadRequest($"Error validating coupon: {ex.Message}");
+                return BadRequest($"Coupon validation failed: {ex.Message}");
             }
         }
 
         private static CouponDto MapToDto(Coupon coupon)
         {
             var now = DateTime.UtcNow;
-            var isValid = coupon.Status == "Active" && 
+            var isValid = coupon.Status == CouponStatus.Active && 
                          coupon.ExpiryDate > now && 
                          coupon.UsedServices < coupon.TotalServices;
 
@@ -229,7 +258,7 @@ namespace CouponHub.Api.Controllers
                 RemainingServices = coupon.TotalServices - coupon.UsedServices,
                 PurchaseDate = coupon.PurchaseDate,
                 ExpiryDate = coupon.ExpiryDate,
-                Status = coupon.Status,
+                Status = coupon.Status.ToString(),
                 IsValid = isValid,
                 RedemptionCount = coupon.Redemptions?.Count ?? 0
             };
@@ -241,6 +270,14 @@ namespace CouponHub.Api.Controllers
         }
     }
 }
+
+
+
+
+
+
+
+
 
 
 
