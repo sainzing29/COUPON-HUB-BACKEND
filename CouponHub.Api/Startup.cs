@@ -20,6 +20,14 @@ namespace CouponHub.Api
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            // Add logging services explicitly
+            services.AddLogging(builder =>
+            {
+                builder.AddConfiguration(Configuration.GetSection("Logging"));
+                builder.AddConsole();
+                builder.AddDebug();
+            });
+
             // DbContext with PostgreSQL
             services.AddDbContext<CouponHubDbContext>(options =>
                 options.UseNpgsql(Configuration.GetConnectionString("DefaultConnection")));
@@ -103,7 +111,7 @@ namespace CouponHub.Api
                                 Id = "Bearer"
                             }
                         },
-                        new string[] {}
+                        Array.Empty<string>()
                     }
                 });
             });
