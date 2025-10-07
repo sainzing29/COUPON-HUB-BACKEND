@@ -21,16 +21,36 @@ namespace CouponHub.Api.Controllers
         /// Basic health check endpoint - no authentication required
         /// </summary>
         [HttpGet]
-        public IActionResult Get()
+        public async Task<IActionResult> Get()
         {
-            return Ok(new
+            try
             {
-                Status = "Healthy",
-                Message = "CouponHub API is running successfully!",
-                Timestamp = DateTime.UtcNow,
-                Version = "1.0.0",
-                Environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Unknown"
-            });
+                // Test database connection
+                var canConnect = await _context.Database.CanConnectAsync();
+                
+                return Ok(new
+                {
+                    Status = canConnect ? "Healthy" : "Degraded",
+                    Message = canConnect ? "CouponHub API is running successfully!" : "API is running but database connection failed",
+                    Timestamp = DateTime.UtcNow,
+                    Version = "1.0.0",
+                    Environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Unknown",
+                    Database = canConnect ? "Connected" : "Disconnected"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Health check failed");
+                return Ok(new
+                {
+                    Status = "Degraded",
+                    Message = "API is running but health check failed",
+                    Timestamp = DateTime.UtcNow,
+                    Version = "1.0.0",
+                    Environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Unknown",
+                    Error = ex.Message
+                });
+            }
         }
 
         /// <summary>

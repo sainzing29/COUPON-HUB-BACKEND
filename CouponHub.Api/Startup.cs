@@ -28,9 +28,17 @@ namespace CouponHub.Api
                 builder.AddDebug();
             });
 
-            // DbContext with PostgreSQL
+            // DbContext with PostgreSQL - with retry policy
             services.AddDbContext<CouponHubDbContext>(options =>
-                options.UseNpgsql(Configuration.GetConnectionString("DefaultConnection")));
+            {
+                options.UseNpgsql(Configuration.GetConnectionString("DefaultConnection"), npgsqlOptions =>
+                {
+                    npgsqlOptions.EnableRetryOnFailure(
+                        maxRetryCount: 3,
+                        maxRetryDelay: TimeSpan.FromSeconds(30),
+                        errorCodesToAdd: null);
+                });
+            });
 
             // Register services
             services.AddScoped<IUserService, UserService>();
@@ -120,6 +128,12 @@ namespace CouponHub.Api
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            // Add logging for debugging
+            var logger = app.ApplicationServices.GetRequiredService<ILogger<Startup>>();
+            logger.LogInformation("Starting application configuration...");
+            logger.LogInformation($"Environment: {env.EnvironmentName}");
+            logger.LogInformation($"Connection String: {Configuration.GetConnectionString("DefaultConnection")?.Substring(0, 20)}...");
+
             // Use CORS - should be early in the pipeline
             app.UseCors("AllowAll");
 
