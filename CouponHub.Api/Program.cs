@@ -76,6 +76,8 @@ app.MapGet("/health", () =>
 Console.WriteLine("🚀 CouponHub API is starting...");
 Console.WriteLine($"Environment: {Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}");
 Console.WriteLine($"Port: {Environment.GetEnvironmentVariable("PORT") ?? "Unknown"}");
+Console.WriteLine($"Database URL: {Environment.GetEnvironmentVariable("DATABASE_URL")?.Substring(0, 20) ?? "Not set"}...");
+Console.WriteLine($"JWT Key: {Environment.GetEnvironmentVariable("JWT_KEY")?.Substring(0, 10) ?? "Not set"}...");
 Console.WriteLine("✅ Application is ready to accept requests");
 
 app.Run();

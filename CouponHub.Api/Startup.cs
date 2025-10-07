@@ -32,6 +32,13 @@ namespace CouponHub.Api
             services.AddDbContext<CouponHubDbContext>(options =>
             {
                 var connectionString = Configuration.GetConnectionString("DefaultConnection");
+                if (string.IsNullOrEmpty(connectionString))
+                {
+                    // Use a default connection string for Railway
+                    connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") ?? 
+                                     "Host=localhost;Database=COUPONHUB;Username=postgres;Password=123456";
+                }
+                
                 options.UseNpgsql(connectionString, npgsqlOptions =>
                 {
                     npgsqlOptions.EnableRetryOnFailure(
@@ -71,7 +78,9 @@ namespace CouponHub.Api
             });
 
             // Add JWT Authentication
-            var jwtKey = Configuration["Jwt:Key"] ?? "default_jwt_key_change_in_production";
+            var jwtKey = Configuration["Jwt:Key"] ?? 
+                        Environment.GetEnvironmentVariable("JWT_KEY") ?? 
+                        "default_jwt_key_change_in_production";
             var jwtIssuer = Configuration["Jwt:Issuer"] ?? "couponhub";
             var jwtAudience = Configuration["Jwt:Audience"] ?? "couponhub_clients";
 
