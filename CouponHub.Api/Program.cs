@@ -7,7 +7,17 @@ builder.Configuration.AddEnvironmentVariables();
 
 // Configure services
 var startup = new Startup(builder.Configuration);
-startup.ConfigureServices(builder.Services);
+try
+{
+    startup.ConfigureServices(builder.Services);
+    Console.WriteLine("✅ Services configured successfully");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"❌ Error configuring services: {ex.Message}");
+    Console.WriteLine($"Stack trace: {ex.StackTrace}");
+    throw;
+}
 
 WebApplication app;
 try
@@ -52,28 +62,15 @@ app.MapGet("/", () => new
 // Add a simple health endpoint at root level for Railway healthcheck
 app.MapGet("/health", () => 
 {
-    try
+    return Results.Ok(new
     {
-        return Results.Ok(new
-        {
-            Status = "Healthy",
-            Message = "CouponHub API is running successfully!",
-            Timestamp = DateTime.UtcNow,
-            Environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production",
-            Port = Environment.GetEnvironmentVariable("PORT") ?? "Unknown",
-            Platform = "Railway"
-        });
-    }
-    catch (Exception ex)
-    {
-        return Results.Ok(new
-        {
-            Status = "Degraded",
-            Message = "API is running but health check had issues",
-            Timestamp = DateTime.UtcNow,
-            Error = ex.Message
-        });
-    }
+        Status = "Healthy",
+        Message = "CouponHub API is running successfully!",
+        Timestamp = DateTime.UtcNow,
+        Environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production",
+        Port = Environment.GetEnvironmentVariable("PORT") ?? "Unknown",
+        Platform = "Railway"
+    });
 });
 
 Console.WriteLine("🚀 CouponHub API is starting...");

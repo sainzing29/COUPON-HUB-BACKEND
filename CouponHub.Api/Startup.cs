@@ -31,7 +31,8 @@ namespace CouponHub.Api
             // DbContext with PostgreSQL - with retry policy
             services.AddDbContext<CouponHubDbContext>(options =>
             {
-                options.UseNpgsql(Configuration.GetConnectionString("DefaultConnection"), npgsqlOptions =>
+                var connectionString = Configuration.GetConnectionString("DefaultConnection");
+                options.UseNpgsql(connectionString, npgsqlOptions =>
                 {
                     npgsqlOptions.EnableRetryOnFailure(
                         maxRetryCount: 3,
