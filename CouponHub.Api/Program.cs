@@ -38,5 +38,14 @@ app.MapGet("/", () => new
     Version = "1.0.0"
 });
 
+// Add a simple health endpoint at root level for Railway healthcheck
+app.MapGet("/health", () => new
+{
+    Status = "Healthy",
+    Message = "CouponHub API is running successfully!",
+    Timestamp = DateTime.UtcNow,
+    Environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"
+});
+
 app.Run();
 
